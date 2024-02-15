@@ -19,9 +19,18 @@ PartyPandaAudioProcessor::PartyPandaAudioProcessor()
                       #endif
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
-                       )
+                       ),
+    _parameters(*this, nullptr, juce::Identifier("Pandamonium"),
+        {
+            std::make_unique<juce::AudioParameterFloat>("frequency",            // parameterID
+                                                         "Frequency",            // parameter name
+                                                         1.0f,              // minimum value
+                                                         1000.0f,              // maximum value
+                                                         200.0f),             // default value
+        })
 #endif
 {
+    _frequency = _parameters.getRawParameterValue("frequency");
 }
 
 PartyPandaAudioProcessor::~PartyPandaAudioProcessor()
@@ -95,6 +104,30 @@ void PartyPandaAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
+    juce::dsp::ProcessSpec spec;
+    spec.sampleRate = sampleRate;
+    spec.maximumBlockSize = samplesPerBlock;
+    spec.numChannels = getTotalNumInputChannels();
+
+    auto filterCoefsFirstThreeStages = juce::dsp::IIR::Coefficients<float>::makeFirstOrderAllPass(sampleRate, *_frequency);
+
+    for (auto& f : _phaseStage1Filters)
+    {
+        f.prepare(spec);
+        f.coefficients = filterCoefsFirstThreeStages;
+    }
+
+    for (auto& f : _phaseStage2Filters)
+    {
+        f.prepare(spec);
+        f.coefficients = filterCoefsFirstThreeStages;
+    }
+
+    for (auto& f : _phaseStage3Filters)
+    {
+        f.prepare(spec);
+        f.coefficients = filterCoefsFirstThreeStages;
+    }
 }
 
 void PartyPandaAudioProcessor::releaseResources()
@@ -154,7 +187,20 @@ void PartyPandaAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     {
         auto* channelData = buffer.getWritePointer (channel);
 
-        // ..do something to the data...
+        auto& filter1 = _phaseStage1Filters[channel];
+        auto& filter2 = _phaseStage2Filters[channel];
+        auto& filter3 = _phaseStage3Filters[channel];
+
+        for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
+        {
+            auto input = channelData[sample];
+
+            auto x = filter1.processSample(input);
+            x = filter2.processSample(x);
+            x = filter3.processSample(x);
+
+            channelData[sample] = input + x;
+        }
     }
 }
 
@@ -166,7 +212,7 @@ bool PartyPandaAudioProcessor::hasEditor() const
 
 juce::AudioProcessorEditor* PartyPandaAudioProcessor::createEditor()
 {
-    return new PartyPandaAudioProcessorEditor (*this);
+    return new PartyPandaAudioProcessorEditor (*this, _parameters);
 }
 
 //==============================================================================
@@ -175,12 +221,20 @@ void PartyPandaAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     // You should use this method to store your parameters in the memory block.
     // You could do that either as raw data, or use the XML or ValueTree classes
     // as intermediaries to make it easy to save and load complex data.
+    auto state = _parameters.copyState();
+    std::unique_ptr<juce::XmlElement> xml(state.createXml());
+    copyXmlToBinary(*xml, destData);
 }
 
 void PartyPandaAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
+    std::unique_ptr<juce::XmlElement> xmlState(getXmlFromBinary(data, sizeInBytes));
+
+    if (xmlState.get() != nullptr)
+        if (xmlState->hasTagName(_parameters.state.getType()))
+            _parameters.replaceState(juce::ValueTree::fromXml(*xmlState));
 }
 
 //==============================================================================
@@ -188,4 +242,27 @@ void PartyPandaAudioProcessor::setStateInformation (const void* data, int sizeIn
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new PartyPandaAudioProcessor();
+}
+
+//==============================================================================
+void PartyPandaAudioProcessor::setFrequency(float frequency)
+{
+    *_frequency = frequency;
+
+    auto filterCoefsFirstThreeStages = juce::dsp::IIR::Coefficients<float>::makeFirstOrderAllPass(getSampleRate(), *_frequency);
+
+    for (auto& f : _phaseStage1Filters)
+    {
+        f.coefficients = filterCoefsFirstThreeStages;
+    }
+
+    for (auto& f : _phaseStage2Filters)
+    {
+        f.coefficients = filterCoefsFirstThreeStages;
+    }
+
+    for (auto& f : _phaseStage3Filters)
+    {
+        f.coefficients = filterCoefsFirstThreeStages;
+    }
 }

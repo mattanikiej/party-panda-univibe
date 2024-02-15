@@ -53,7 +53,18 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
+    void setFrequency(float frequency);
+
 private:
+    juce::AudioProcessorValueTreeState _parameters;
+
+    std::atomic<float>* _frequency = nullptr;
+
+    // initial 3 stage phase fitlter
+    std::array<juce::dsp::IIR::Filter<float>, 2> _phaseStage1Filters;
+    std::array<juce::dsp::IIR::Filter<float>, 2> _phaseStage2Filters;
+    std::array<juce::dsp::IIR::Filter<float>, 2> _phaseStage3Filters;
+
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PartyPandaAudioProcessor)
 };
