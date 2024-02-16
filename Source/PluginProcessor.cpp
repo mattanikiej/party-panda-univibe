@@ -22,15 +22,53 @@ PartyPandaAudioProcessor::PartyPandaAudioProcessor()
                        ),
     _parameters(*this, nullptr, juce::Identifier("Pandamonium"),
         {
-            std::make_unique<juce::AudioParameterFloat>("frequency",            // parameterID
-                                                         "Frequency",            // parameter name
-                                                         1.0f,              // minimum value
-                                                         1000.0f,              // maximum value
-                                                         200.0f),             // default value
+            std::make_unique<juce::AudioParameterFloat>("intensity",          // parameterID
+                                                         "Intensity",         // parameter name
+                                                         0.0f,                // minimum value
+                                                         1.0f,                // maximum value
+                                                         0.5f),               // default value
+
+            std::make_unique<juce::AudioParameterFloat>("rate",               // parameterID
+                                                         "Rate",              // parameter name
+                                                         0.0f,                // minimum value
+                                                         10.0f,               // maximum value
+                                                         5.0f),               // default value
+
+            std::make_unique<juce::AudioParameterFloat>("depth",              // parameterID
+                                                         "Depth",             // parameter name
+                                                         0.0f,                // minimum value
+                                                         1.0f,                // maximum value
+                                                         0.5f),               // default value
+
+            std::make_unique<juce::AudioParameterFloat>("throb",              // parameterID
+                                                         "Throb",             // parameter name
+                                                         1.0f,                // minimum value
+                                                         10.0f,               // maximum value
+                                                         5.0f),               // default value
+
+            std::make_unique<juce::AudioParameterFloat>("wet",                // parameterID
+                                                         "Wet",               // parameter name
+                                                         0.0f,                // minimum value
+                                                         10.0f,                // maximum value
+                                                         1.0f),               // default value
+
+            std::make_unique<juce::AudioParameterFloat>("dry",                // parameterID
+                                                         "Dry",               // parameter name
+                                                         0.0f,                // minimum value
+                                                         10.0f,                // maximum value
+                                                         1.0f),               // default value
         })
 #endif
 {
-    _frequency = _parameters.getRawParameterValue("frequency");
+    _intensity = _parameters.getRawParameterValue("frequency");
+    _rate = _parameters.getRawParameterValue("rate");
+    _depth = _parameters.getRawParameterValue("depth");
+    _throb = _parameters.getRawParameterValue("throb");
+
+    _wet = _parameters.getRawParameterValue("wet");
+    _dry = _parameters.getRawParameterValue("dry");
+
+    setRate(*_rate);
 }
 
 PartyPandaAudioProcessor::~PartyPandaAudioProcessor()
@@ -109,25 +147,35 @@ void PartyPandaAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     spec.maximumBlockSize = samplesPerBlock;
     spec.numChannels = getTotalNumInputChannels();
 
-    auto filterCoefsFirstThreeStages = juce::dsp::IIR::Coefficients<float>::makeFirstOrderAllPass(sampleRate, *_frequency);
+    auto pf1 = juce::dsp::IIR::Coefficients<float>::makeAllPass(sampleRate, _frequencyRange[0]);
+    auto pf2 = juce::dsp::IIR::Coefficients<float>::makeAllPass(sampleRate, _frequencyRange[0]);
+    auto pf3 = juce::dsp::IIR::Coefficients<float>::makeAllPass(sampleRate, _frequencyRange[0]);
+    auto pf4 = juce::dsp::IIR::Coefficients<float>::makeAllPass(sampleRate, _frequencyRange[0]);
 
     for (auto& f : _phaseStage1Filters)
     {
         f.prepare(spec);
-        f.coefficients = filterCoefsFirstThreeStages;
+        f.coefficients = pf1;
     }
 
     for (auto& f : _phaseStage2Filters)
     {
         f.prepare(spec);
-        f.coefficients = filterCoefsFirstThreeStages;
+        f.coefficients = pf2;
     }
 
     for (auto& f : _phaseStage3Filters)
     {
         f.prepare(spec);
-        f.coefficients = filterCoefsFirstThreeStages;
+        f.coefficients = pf3;
     }
+
+    for (auto& f : _phaseStage4Filters)
+    {
+        f.prepare(spec);
+        f.coefficients = pf4;
+    }
+    
 }
 
 void PartyPandaAudioProcessor::releaseResources()
@@ -168,38 +216,60 @@ void PartyPandaAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
 
-    // In case we have more outputs than inputs, this code clears any output
-    // channels that didn't contain input data, (because these aren't
-    // guaranteed to be empty - they may contain garbage).
-    // This is here to avoid people getting screaming feedback
-    // when they first compile a plugin, but obviously you don't need to keep
-    // this code if your algorithm always overwrites all the output channels.
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
-    // This is the place where you'd normally do the guts of your plugin's
-    // audio processing...
-    // Make sure to reset the state if your inner loop is processing
-    // the samples and the outer loop is handling the channels.
-    // Alternatively, you can process the samples with the channels
-    // interleaved by keeping the same state.
     for (int channel = 0; channel < totalNumInputChannels; ++channel)
     {
         auto* channelData = buffer.getWritePointer (channel);
 
-        auto& filter1 = _phaseStage1Filters[channel];
-        auto& filter2 = _phaseStage2Filters[channel];
-        auto& filter3 = _phaseStage3Filters[channel];
+        auto& phaseF1 = _phaseStage1Filters[channel];
+        auto& phaseF2 = _phaseStage2Filters[channel];
+        auto& phaseF3 = _phaseStage3Filters[channel];
+        auto& phaseF4 = _phaseStage4Filters[channel];
+
+        int stepsTaken = 0;
+        float phaseFUpdates = 0.0f;
 
         for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
         {
-            auto input = channelData[sample];
+            auto dry = channelData[sample];
+            auto wet = dry;
 
-            auto x = filter1.processSample(input);
-            x = filter2.processSample(x);
-            x = filter3.processSample(x);
+            // update phase oscillator if needed
+            if (stepsTaken == 20)
+            {
+                stepsTaken = 0;
 
-            channelData[sample] = input + x;
+                phaseFUpdates++;
+                // reset phaseFUpdates to prevent overflow
+                if (phaseFUpdates >= 360.0f) 
+                {
+                    phaseFUpdates = 0.0f;
+                }
+
+                // get phase step in radians
+                float phaseStep = phaseFUpdates / 360.0f;
+                phaseStep *= twoPi;
+                
+                auto newFrequency = std::sinf(phaseStep);
+                newFrequency = juce::jmap(newFrequency, -1.0f, 1.0f, _frequencyRange[0], _frequencyRange[1]);
+
+                setFrequencyByChannel(newFrequency, channel);
+            }
+
+            // initially pass through 4 stage phase filter
+            wet = phaseF1.processSample(wet);
+            wet += phaseF2.processSample(wet);
+            wet += phaseF3.processSample(wet);
+            wet += phaseF4.processSample(wet);
+            // wet *= (*_intensity);
+            
+            float dryMix = (*_dry / 10.0f) * dry;
+            float wetMix = (*_wet / 10.0f) * wet;
+            channelData[sample] = dryMix + wetMix;
+
+            stepsTaken++;
         }
     }
 }
@@ -245,24 +315,23 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 }
 
 //==============================================================================
-void PartyPandaAudioProcessor::setFrequency(float frequency)
+void PartyPandaAudioProcessor::setFrequencyByChannel(float frequency, int channel)
 {
-    *_frequency = frequency;
+    auto sampleRate = getSampleRate();
 
-    auto filterCoefsFirstThreeStages = juce::dsp::IIR::Coefficients<float>::makeFirstOrderAllPass(getSampleRate(), *_frequency);
+    auto pf1 = juce::dsp::IIR::Coefficients<float>::makeAllPass(sampleRate, frequency);
+    auto pf2 = juce::dsp::IIR::Coefficients<float>::makeAllPass(sampleRate, frequency);
+    auto pf3 = juce::dsp::IIR::Coefficients<float>::makeAllPass(sampleRate, frequency);
+    auto pf4 = juce::dsp::IIR::Coefficients<float>::makeAllPass(sampleRate, frequency);
 
-    for (auto& f : _phaseStage1Filters)
-    {
-        f.coefficients = filterCoefsFirstThreeStages;
-    }
+    _phaseStage1Filters[channel].coefficients = pf1;
+    _phaseStage2Filters[channel].coefficients = pf2; 
+    _phaseStage3Filters[channel].coefficients = pf3; 
+    _phaseStage4Filters[channel].coefficients = pf4;
+}
 
-    for (auto& f : _phaseStage2Filters)
-    {
-        f.coefficients = filterCoefsFirstThreeStages;
-    }
-
-    for (auto& f : _phaseStage3Filters)
-    {
-        f.coefficients = filterCoefsFirstThreeStages;
-    }
+void PartyPandaAudioProcessor::setRate(float rate)
+{
+    float newRate = juce::jmap(rate, 0.0f, 10.0f, _rateRange[1], _rateRange[0]);
+    _phaseRate = newRate;
 }

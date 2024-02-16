@@ -34,9 +34,29 @@ private:
     PartyPandaAudioProcessor& audioProcessor;
     juce::AudioProcessorValueTreeState& _valueTreeState;
 
-    juce::Label _frequencyLabel;
-    juce::Slider _frequencySlider;
-    std::unique_ptr<SliderAttachment> _frequencyAttachment;
+    juce::Label _intensityLabel;
+    juce::Slider _intensitySlider;
+    std::unique_ptr<SliderAttachment> _intensityAttachment;
+
+    juce::Label _rateLabel;
+    juce::Slider _rateSlider;
+    std::unique_ptr<SliderAttachment> _rateAttachment;
+
+    juce::Label _depthLabel;
+    juce::Slider _depthSlider;
+    std::unique_ptr<SliderAttachment> _depthAttachment;
+
+    juce::Label _throbLabel;
+    juce::Slider _throbSlider;
+    std::unique_ptr<SliderAttachment> _throbAttachment;
+
+    juce::Label _wetLabel;
+    juce::Slider _wetSlider;
+    std::unique_ptr<SliderAttachment> _wetAttachment;
+
+    juce::Label _dryLabel;
+    juce::Slider _drySlider;
+    std::unique_ptr<SliderAttachment> _dryAttachment;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PartyPandaAudioProcessorEditor)
 };

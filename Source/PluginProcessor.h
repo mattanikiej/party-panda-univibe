@@ -53,17 +53,33 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
-    void setFrequency(float frequency);
+    void setFrequencyByChannel(float frequency, int channel);
+
+    void setRate(float rate);
 
 private:
+    const float pi = std::acosf(-1);
+    const float twoPi = 2 * pi;
+
     juce::AudioProcessorValueTreeState _parameters;
 
-    std::atomic<float>* _frequency = nullptr;
+    std::atomic<float>* _intensity = nullptr; // range of frequencies phaser will oscilate
+    std::atomic<float>* _rate = nullptr; // speed at which phase will oscilate through frequencies
+    std::atomic<float>* _depth = nullptr; // depth of vibrato effect
+    std::atomic<float>* _throb = nullptr; // speed at which vibrato throbs
 
-    // initial 3 stage phase fitlter
+    std::atomic<float>* _wet = nullptr; // amount of dry signal
+    std::atomic<float>* _dry = nullptr; // amount of wet signal
+
+    // initial 4 stage phase filter
     std::array<juce::dsp::IIR::Filter<float>, 2> _phaseStage1Filters;
     std::array<juce::dsp::IIR::Filter<float>, 2> _phaseStage2Filters;
     std::array<juce::dsp::IIR::Filter<float>, 2> _phaseStage3Filters;
+    std::array<juce::dsp::IIR::Filter<float>, 2> _phaseStage4Filters;
+    std::array<float, 2> _frequencyRange = { 60.0f, 20000.0f };
+
+    float _phaseRate;
+    std::array<float, 2> _rateRange = { 20.0f, 1000.0f };
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PartyPandaAudioProcessor)
