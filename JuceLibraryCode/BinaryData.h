@@ -8,11 +8,11 @@
 
 namespace BinaryData
 {
-    extern const char*   KOMIKAX_ttf;
-    const int            KOMIKAX_ttfSize = 58380;
-
     extern const char*   partypandabackground_png;
     const int            partypandabackground_pngSize = 23249;
+
+    extern const char*   KOMIKAX_ttf;
+    const int            KOMIKAX_ttfSize = 58380;
 
     // Number of elements in the namedResourceList and originalFileNames arrays.
     const int namedResourceListSize = 2;

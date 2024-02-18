@@ -18,9 +18,9 @@
             file="Source/PluginEditor.cpp"/>
       <FILE id="vPs8jX" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
     </GROUP>
-    <FILE id="zaZf1H" name="KOMIKAX.ttf" compile="0" resource="1" file="../Pandamonium/Assets/KOMIKAX.ttf"/>
     <FILE id="As21x2" name="party-panda-background.png" compile="0" resource="1"
           file="Assets/party-panda-background.png"/>
+    <FILE id="ujnJR5" name="KOMIKAX.ttf" compile="0" resource="1" file="Assets/KOMIKAX.ttf"/>
   </MAINGROUP>
   <MODULES>
     <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
