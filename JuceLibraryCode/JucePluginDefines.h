@@ -41,7 +41,7 @@
  #define JucePlugin_Enable_ARA             0
 #endif
 #ifndef  JucePlugin_Name
- #define JucePlugin_Name                   "PartyPanda"
+ #define JucePlugin_Name                   "Party Panda"
 #endif
 #ifndef  JucePlugin_Desc
  #define JucePlugin_Desc                   "Univibe audio effect"
@@ -137,7 +137,7 @@
  #define JucePlugin_IAASubType             JucePlugin_PluginCode
 #endif
 #ifndef  JucePlugin_IAAName
- #define JucePlugin_IAAName                "Cool Panda Software: PartyPanda"
+ #define JucePlugin_IAAName                "Cool Panda Software: Party Panda"
 #endif
 #ifndef  JucePlugin_VSTNumMidiInputs
  #define JucePlugin_VSTNumMidiInputs       16

@@ -3,7 +3,8 @@
 <JUCERPROJECT id="TaZNEL" name="PartyPanda" projectType="audioplug" useAppConfig="0"
               addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1" companyName="Cool Panda Software"
               companyWebsite="www.coolxpandaxplugins.com" companyEmail="coolpandasoftware@gmail.com"
-              pluginDesc="Univibe audio effect" pluginVST3Category="Fx,Modulation">
+              pluginDesc="Univibe audio effect" pluginVST3Category="Fx,Modulation"
+              pluginName="Party Panda">
   <MAINGROUP id="MynicE" name="PartyPanda">
     <GROUP id="{88994C58-3ECB-2A75-76F6-C6ED42B1296B}" name="Source">
       <FILE id="PME01g" name="PartyPandaLAF.cpp" compile="1" resource="0"
