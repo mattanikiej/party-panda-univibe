@@ -6,14 +6,20 @@
               pluginDesc="Univibe audio effect" pluginVST3Category="Fx,Modulation">
   <MAINGROUP id="MynicE" name="PartyPanda">
     <GROUP id="{88994C58-3ECB-2A75-76F6-C6ED42B1296B}" name="Source">
+      <FILE id="PME01g" name="PartyPandaLAF.cpp" compile="1" resource="0"
+            file="Source/PartyPandaLAF.cpp"/>
       <FILE id="ZxsF34" name="PluginProcessor.cpp" compile="1" resource="0"
             file="Source/PluginProcessor.cpp"/>
+      <FILE id="nvYmcw" name="PartyPandaLAF.h" compile="0" resource="0" file="Source/PartyPandaLAF.h"/>
       <FILE id="o60BSx" name="PluginProcessor.h" compile="0" resource="0"
             file="Source/PluginProcessor.h"/>
       <FILE id="WdJVWo" name="PluginEditor.cpp" compile="1" resource="0"
             file="Source/PluginEditor.cpp"/>
       <FILE id="vPs8jX" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
     </GROUP>
+    <FILE id="zaZf1H" name="KOMIKAX.ttf" compile="0" resource="1" file="../Pandamonium/Assets/KOMIKAX.ttf"/>
+    <FILE id="As21x2" name="party-panda-background.png" compile="0" resource="1"
+          file="Assets/party-panda-background.png"/>
   </MAINGROUP>
   <MODULES>
     <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>

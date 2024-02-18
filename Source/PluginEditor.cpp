@@ -9,6 +9,10 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
+using Track = juce::Grid::TrackInfo;
+using Fr = juce::Grid::Fr;
+using Px = juce::Grid::Px;
+
 //==============================================================================
 PartyPandaAudioProcessorEditor::PartyPandaAudioProcessorEditor (PartyPandaAudioProcessor& p, juce::AudioProcessorValueTreeState& vts)
     : AudioProcessorEditor (&p), audioProcessor (p), _valueTreeState(vts)
@@ -17,13 +21,15 @@ PartyPandaAudioProcessorEditor::PartyPandaAudioProcessorEditor (PartyPandaAudioP
     // editor's size to whatever you need it to be.
     setSize (700, 400);
 
+    PartyPandaLAF::setDefaultLookAndFeel(&_lookAndFeel);
+
     // effect sliders
     _intensityLabel.setText("Intensity", juce::dontSendNotification);
     addAndMakeVisible(_intensityLabel);
 
     addAndMakeVisible(_intensitySlider);
-    _intensitySlider.setSliderStyle(juce::Slider::LinearBarVertical);
-    _intensitySlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 90, 0);
+    _intensitySlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    _intensitySlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 150, 30);
     _intensitySlider.setPopupDisplayEnabled(true, false, this);
     _intensitySlider.setTextValueSuffix(" - Intensity");
     _intensitySlider.addListener(this);
@@ -33,8 +39,8 @@ PartyPandaAudioProcessorEditor::PartyPandaAudioProcessorEditor (PartyPandaAudioP
     addAndMakeVisible(_rateLabel);
 
     addAndMakeVisible(_rateSlider);
-    _rateSlider.setSliderStyle(juce::Slider::LinearBarVertical);
-    _rateSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 90, 0);
+    _rateSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    _rateSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 150, 30);
     _rateSlider.setPopupDisplayEnabled(true, false, this);
     _rateSlider.setTextValueSuffix(" - Rate");
     _rateSlider.addListener(this);
@@ -44,8 +50,8 @@ PartyPandaAudioProcessorEditor::PartyPandaAudioProcessorEditor (PartyPandaAudioP
     addAndMakeVisible(_depthLabel);
 
     addAndMakeVisible(_depthSlider);
-    _depthSlider.setSliderStyle(juce::Slider::LinearBarVertical);
-    _depthSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 90, 0);
+    _depthSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    _depthSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 150, 30);
     _depthSlider.setPopupDisplayEnabled(true, false, this);
     _depthSlider.setTextValueSuffix(" - Depth");
     _depthSlider.addListener(this);
@@ -55,8 +61,8 @@ PartyPandaAudioProcessorEditor::PartyPandaAudioProcessorEditor (PartyPandaAudioP
     addAndMakeVisible(_throbLabel);
 
     addAndMakeVisible(_throbSlider);
-    _throbSlider.setSliderStyle(juce::Slider::LinearBarVertical);
-    _throbSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 90, 0);
+    _throbSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    _throbSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 150, 30);
     _throbSlider.setPopupDisplayEnabled(true, false, this);
     _throbSlider.setTextValueSuffix(" - Throb");
     _throbSlider.addListener(this);
@@ -67,8 +73,8 @@ PartyPandaAudioProcessorEditor::PartyPandaAudioProcessorEditor (PartyPandaAudioP
     addAndMakeVisible(_wetLabel);
 
     addAndMakeVisible(_wetSlider);
-    _wetSlider.setSliderStyle(juce::Slider::LinearBarVertical);
-    _wetSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 90, 0);
+    _wetSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    _wetSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 150, 30);
     _wetSlider.setPopupDisplayEnabled(true, false, this);
     _wetSlider.setTextValueSuffix(" - wet");
     _wetSlider.addListener(this);
@@ -78,8 +84,8 @@ PartyPandaAudioProcessorEditor::PartyPandaAudioProcessorEditor (PartyPandaAudioP
     addAndMakeVisible(_dryLabel);
 
     addAndMakeVisible(_drySlider);
-    _drySlider.setSliderStyle(juce::Slider::LinearBarVertical);
-    _drySlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 90, 0);
+    _drySlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    _drySlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 150, 30);
     _drySlider.setPopupDisplayEnabled(true, false, this);
     _drySlider.setTextValueSuffix(" - dry");
     _drySlider.addListener(this);
@@ -94,28 +100,46 @@ PartyPandaAudioProcessorEditor::~PartyPandaAudioProcessorEditor()
 //==============================================================================
 void PartyPandaAudioProcessorEditor::paint (juce::Graphics& g)
 {
-    // (Our component is opaque, so we must completely fill the background with a solid colour)
-    g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
-
-    g.setColour (juce::Colours::white);
-    g.setFont (15.0f);
-    g.drawFittedText ("Party Panda", getLocalBounds(), juce::Justification::centred, 1);
+    g.drawImageAt(_background, 0, 0);
 }
 
 void PartyPandaAudioProcessorEditor::resized()
 {
-    // This is generally where you'll want to lay out the positions of any
-    // subcomponents in your editor..
-    _intensitySlider.setBounds(40, 30, 20, getHeight() - 60);
-    _rateSlider.setBounds(80, 30, 20, getHeight() - 60);
-    _depthSlider.setBounds(120, 30, 20, getHeight() - 60);
-    _throbSlider.setBounds(160, 30, 20, getHeight() - 60);
+    float sliderWidth = 130.0f;
 
-    _drySlider.setBounds(200, 30, 20, getHeight() - 60);
-    _wetSlider.setBounds(240, 30, 20, getHeight() - 60);
+    juce::Grid grid;
+
+    grid.templateRows = { Track(Fr(1)), Track(Fr(1)) };
+    grid.templateColumns = { Track(Fr(1)), Track(Fr(1)), Track(Fr(1)), Track(Fr(1)) };
+
+    grid.justifyContent = juce::Grid::JustifyContent::center;
+    grid.justifyItems = juce::Grid::JustifyItems::center;
+
+    grid.alignContent = juce::Grid::AlignContent::center;
+    grid.alignItems = juce::Grid::AlignItems::center;
+
+    grid.items = {
+        // volume
+        juce::GridItem(_drySlider).withWidth(sliderWidth).withHeight(sliderWidth),
+        juce::GridItem(),
+        juce::GridItem(),
+        juce::GridItem(_wetSlider).withWidth(sliderWidth).withHeight(sliderWidth),
+
+        // phase
+        juce::GridItem(_intensitySlider).withWidth(sliderWidth).withHeight(sliderWidth),
+        juce::GridItem(_rateSlider).withWidth(sliderWidth).withHeight(sliderWidth),
+
+        // vibrato
+        juce::GridItem(_depthSlider).withWidth(sliderWidth).withHeight(sliderWidth),
+        juce::GridItem(_throbSlider).withWidth(sliderWidth).withHeight(sliderWidth),  
+    };
+
+    grid.performLayout(getLocalBounds());
 }
 
 void PartyPandaAudioProcessorEditor::sliderValueChanged(juce::Slider* slider)
 {
     audioProcessor.setRate(_rateSlider.getValue());
+    audioProcessor.setThrob(_throbSlider.getValue());
+    audioProcessor.setIntensity(_intensitySlider.getValue());
 }

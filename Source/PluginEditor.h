@@ -10,6 +10,7 @@
 
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
+#include "PartyPandaLAF.h"
 
 typedef juce::AudioProcessorValueTreeState::SliderAttachment SliderAttachment;
 
@@ -57,6 +58,10 @@ private:
     juce::Label _dryLabel;
     juce::Slider _drySlider;
     std::unique_ptr<SliderAttachment> _dryAttachment;
+
+    PartyPandaLAF _lookAndFeel;
+
+    juce::Image _background = juce::ImageCache::getFromMemory(BinaryData::partypandabackground_png, BinaryData::partypandabackground_pngSize);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PartyPandaAudioProcessorEditor)
 };

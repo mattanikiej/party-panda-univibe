@@ -25,8 +25,8 @@ PartyPandaAudioProcessor::PartyPandaAudioProcessor()
             std::make_unique<juce::AudioParameterFloat>("intensity",          // parameterID
                                                          "Intensity",         // parameter name
                                                          0.0f,                // minimum value
-                                                         1.0f,                // maximum value
-                                                         0.5f),               // default value
+                                                         10.0f,                // maximum value
+                                                         5.0f),               // default value
 
             std::make_unique<juce::AudioParameterFloat>("rate",               // parameterID
                                                          "Rate",              // parameter name
@@ -37,12 +37,12 @@ PartyPandaAudioProcessor::PartyPandaAudioProcessor()
             std::make_unique<juce::AudioParameterFloat>("depth",              // parameterID
                                                          "Depth",             // parameter name
                                                          0.0f,                // minimum value
-                                                         1.0f,                // maximum value
-                                                         0.5f),               // default value
+                                                         10.0f,                // maximum value
+                                                         5.0f),               // default value
 
             std::make_unique<juce::AudioParameterFloat>("throb",              // parameterID
                                                          "Throb",             // parameter name
-                                                         1.0f,                // minimum value
+                                                         0.0f,                // minimum value
                                                          10.0f,               // maximum value
                                                          5.0f),               // default value
 
@@ -50,17 +50,17 @@ PartyPandaAudioProcessor::PartyPandaAudioProcessor()
                                                          "Wet",               // parameter name
                                                          0.0f,                // minimum value
                                                          10.0f,                // maximum value
-                                                         1.0f),               // default value
+                                                         5.0f),               // default value
 
             std::make_unique<juce::AudioParameterFloat>("dry",                // parameterID
                                                          "Dry",               // parameter name
                                                          0.0f,                // minimum value
                                                          10.0f,                // maximum value
-                                                         1.0f),               // default value
+                                                         5.0f),               // default value
         })
 #endif
 {
-    _intensity = _parameters.getRawParameterValue("frequency");
+    _intensity = _parameters.getRawParameterValue("intensity");
     _rate = _parameters.getRawParameterValue("rate");
     _depth = _parameters.getRawParameterValue("depth");
     _throb = _parameters.getRawParameterValue("throb");
@@ -69,6 +69,8 @@ PartyPandaAudioProcessor::PartyPandaAudioProcessor()
     _dry = _parameters.getRawParameterValue("dry");
 
     setRate(*_rate);
+    setThrob(*_throb);
+    setIntensity(*_intensity);
 }
 
 PartyPandaAudioProcessor::~PartyPandaAudioProcessor()
@@ -228,8 +230,12 @@ void PartyPandaAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
         auto& phaseF3 = _phaseStage3Filters[channel];
         auto& phaseF4 = _phaseStage4Filters[channel];
 
-        int stepsTaken = 0;
+        int phaseStepsTaken = 0;
         float phaseFUpdates = 0.0f;
+
+        int throbStepsTaken = 0;
+        float throbUpdates = 0.0f;
+        float throb = 1.0f;
 
         for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
         {
@@ -237,15 +243,15 @@ void PartyPandaAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
             auto wet = dry;
 
             // update phase oscillator if needed
-            if (stepsTaken == 20)
+            if (phaseStepsTaken == _phaseRate)
             {
-                stepsTaken = 0;
+                phaseStepsTaken = 0;
 
-                phaseFUpdates++;
-                // reset phaseFUpdates to prevent overflow
+                phaseFUpdates += 1.0f;
+                // wrap phaseFUpdates to prevent overflow
                 if (phaseFUpdates >= 360.0f) 
                 {
-                    phaseFUpdates = 0.0f;
+                    phaseFUpdates -= 360.0f;
                 }
 
                 // get phase step in radians
@@ -263,13 +269,36 @@ void PartyPandaAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
             wet += phaseF2.processSample(wet);
             wet += phaseF3.processSample(wet);
             wet += phaseF4.processSample(wet);
-            // wet *= (*_intensity);
+            wet *= _intensityMapped;
+
+            // update throb if necessary
+            if (throbStepsTaken == _throbRate)
+            {
+                throbStepsTaken = 0;
+
+                // wrap throbUpdates to prevent overflow
+                if (throbUpdates >= 500.0f)
+                {
+                    throbUpdates = 0.0f;
+                }
+
+                float newThrob = throbUpdates / 500.0f;
+                float depth = *_depth / 10.0f;
+                throb = juce::jmap(newThrob, 0.0f, 1.0f, 1.0f - depth, 1.0f);
+
+
+                throbUpdates += 1.0f;
+            }
+
             
             float dryMix = (*_dry / 10.0f) * dry;
             float wetMix = (*_wet / 10.0f) * wet;
-            channelData[sample] = dryMix + wetMix;
+            wetMix *= throb;
+            float output = dryMix + wetMix;
+            channelData[sample] = output;
 
-            stepsTaken++;
+            phaseStepsTaken++;
+            throbStepsTaken++;
         }
     }
 }
@@ -294,6 +323,10 @@ void PartyPandaAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     auto state = _parameters.copyState();
     std::unique_ptr<juce::XmlElement> xml(state.createXml());
     copyXmlToBinary(*xml, destData);
+
+    setRate(*_rate);
+    setThrob(*_throb);
+    setIntensity(*_intensity);
 }
 
 void PartyPandaAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
@@ -334,4 +367,15 @@ void PartyPandaAudioProcessor::setRate(float rate)
 {
     float newRate = juce::jmap(rate, 0.0f, 10.0f, _rateRange[1], _rateRange[0]);
     _phaseRate = newRate;
+}
+
+void PartyPandaAudioProcessor::setThrob(float throb)
+{
+    float newThrob = juce::jmap(throb, 0.0f, 10.0f, 500.0f, 44000.0f);
+    _throbRate = newThrob;
+}
+
+void PartyPandaAudioProcessor::setIntensity(float intensity)
+{
+    _intensityMapped = intensity / 10.0f;
 }

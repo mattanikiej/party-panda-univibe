@@ -1,1 +1,7 @@
 Builds/*
+
+*.kra
+*.kra~
+*.mp4
+
+thumbnail.*
