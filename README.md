@@ -9,7 +9,7 @@ For a groovy feel, or a vibe like no other, Party Panda can do it all. Its uniqu
 
 Experience the short demo below:
 
-https://www.youtube.com/watch?v=5FAq3uDZJW8
+https://www.youtube.com/watch?v=yq-T4vw3dbU
 
 ## Parameters
 * Intensity - amount of phased signal to add
