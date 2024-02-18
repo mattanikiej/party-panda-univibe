@@ -58,10 +58,12 @@ public:
     void setRate(float rate);
     void setThrob(float throb);
     void setIntensity(float intensity);
+    void setDepth(float depth);
 
 private:
     const float pi = std::acosf(-1);
     const float twoPi = 2.0f * pi;
+    float _sampleRate = 0.0f;
 
     juce::AudioProcessorValueTreeState _parameters;
 
@@ -82,10 +84,13 @@ private:
     float _intensityMapped;
 
     float _phaseRate;
-    std::array<float, 2> _frequencyRange = { 60.0f, 20000.0f };
-    std::array<float, 2> _rateRange = { 20.0f, 1000.0f };
+    std::array<float, 2> _frequencyRange = { 100.0f, 10000.0f };
+    std::array<float, 2> _phasers = { 0.0f, 0.0f };
 
     float _throbRate;
+    std::array<float, 2> _throbs = { 0.0f, 0.0f };
+
+    float _depthMapped;
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PartyPandaAudioProcessor)

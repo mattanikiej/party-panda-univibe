@@ -71,6 +71,7 @@ PartyPandaAudioProcessor::PartyPandaAudioProcessor()
     setRate(*_rate);
     setThrob(*_throb);
     setIntensity(*_intensity);
+    setDepth(*_depth);
 }
 
 PartyPandaAudioProcessor::~PartyPandaAudioProcessor()
@@ -144,6 +145,8 @@ void PartyPandaAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
+    _sampleRate = sampleRate;
+
     juce::dsp::ProcessSpec spec;
     spec.sampleRate = sampleRate;
     spec.maximumBlockSize = samplesPerBlock;
@@ -229,40 +232,21 @@ void PartyPandaAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
         auto& phaseF2 = _phaseStage2Filters[channel];
         auto& phaseF3 = _phaseStage3Filters[channel];
         auto& phaseF4 = _phaseStage4Filters[channel];
+        auto& phaserStep = _phasers[channel];
 
-        int phaseStepsTaken = 0;
-        float phaseFUpdates = 0.0f;
-
-        int throbStepsTaken = 0;
-        float throbUpdates = 0.0f;
-        float throb = 1.0f;
+        auto& throbStep = _throbs[channel];
 
         for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
         {
             auto dry = channelData[sample];
             auto wet = dry;
 
-            // update phase oscillator if needed
-            if (phaseStepsTaken == _phaseRate)
-            {
-                phaseStepsTaken = 0;
-
-                phaseFUpdates += 1.0f;
-                // wrap phaseFUpdates to prevent overflow
-                if (phaseFUpdates >= 360.0f) 
-                {
-                    phaseFUpdates -= 360.0f;
-                }
-
-                // get phase step in radians
-                float phaseStep = phaseFUpdates / 360.0f;
-                phaseStep *= twoPi;
-                
-                auto newFrequency = std::sinf(phaseStep);
-                newFrequency = juce::jmap(newFrequency, -1.0f, 1.0f, _frequencyRange[0], _frequencyRange[1]);
-
-                setFrequencyByChannel(newFrequency, channel);
-            }
+            // oscillate phase
+            float wP = 1.0f / _phaseRate;
+            float newFrequency = std::sinf(wP * phaserStep);
+            newFrequency = juce::jmap(newFrequency, -1.0f, 1.0f, _frequencyRange[0], _frequencyRange[1]);
+            setFrequencyByChannel(newFrequency, channel);
+            phaserStep += 1.0f;
 
             // initially pass through 4 stage phase filter
             wet = phaseF1.processSample(wet);
@@ -271,34 +255,20 @@ void PartyPandaAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
             wet += phaseF4.processSample(wet);
             wet *= _intensityMapped;
 
-            // update throb if necessary
-            if (throbStepsTaken == _throbRate)
-            {
-                throbStepsTaken = 0;
+            // oscillate throb
+            float wT = 1.0f / _throbRate;
+            float throb = std::sinf(wT * throbStep);
+            throb = juce::jmap(throb, -1.0f, 1.0f, 1.0f - _depthMapped, 1.0f);
+            throbStep += 1.0f;
 
-                // wrap throbUpdates to prevent overflow
-                if (throbUpdates >= 500.0f)
-                {
-                    throbUpdates = 0.0f;
-                }
-
-                float newThrob = throbUpdates / 500.0f;
-                float depth = *_depth / 10.0f;
-                throb = juce::jmap(newThrob, 0.0f, 1.0f, 1.0f - depth, 1.0f);
-
-
-                throbUpdates += 1.0f;
-            }
-
+            // add throb
+            wet *= throb;
             
             float dryMix = (*_dry / 10.0f) * dry;
             float wetMix = (*_wet / 10.0f) * wet;
-            wetMix *= throb;
             float output = dryMix + wetMix;
             channelData[sample] = output;
 
-            phaseStepsTaken++;
-            throbStepsTaken++;
         }
     }
 }
@@ -327,6 +297,7 @@ void PartyPandaAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     setRate(*_rate);
     setThrob(*_throb);
     setIntensity(*_intensity);
+    setDepth(*_depth);
 }
 
 void PartyPandaAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
@@ -365,17 +336,22 @@ void PartyPandaAudioProcessor::setFrequencyByChannel(float frequency, int channe
 
 void PartyPandaAudioProcessor::setRate(float rate)
 {
-    float newRate = juce::jmap(rate, 0.0f, 10.0f, _rateRange[1], _rateRange[0]);
+    float newRate = juce::jmap(rate, 0.0f, 10.0f, 10000.0f, 1.0f);
     _phaseRate = newRate;
 }
 
 void PartyPandaAudioProcessor::setThrob(float throb)
 {
-    float newThrob = juce::jmap(throb, 0.0f, 10.0f, 500.0f, 44000.0f);
+    float newThrob = juce::jmap(throb, 0.0f, 10.0f, 20000.0f, 1.0f);
     _throbRate = newThrob;
 }
 
 void PartyPandaAudioProcessor::setIntensity(float intensity)
 {
     _intensityMapped = intensity / 10.0f;
+}
+
+void PartyPandaAudioProcessor::setDepth(float depth)
+{
+    _depthMapped = depth / 10.0f;
 }

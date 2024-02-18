@@ -142,4 +142,5 @@ void PartyPandaAudioProcessorEditor::sliderValueChanged(juce::Slider* slider)
     audioProcessor.setRate(_rateSlider.getValue());
     audioProcessor.setThrob(_throbSlider.getValue());
     audioProcessor.setIntensity(_intensitySlider.getValue());
+    audioProcessor.setDepth(_depthSlider.getValue());
 }
