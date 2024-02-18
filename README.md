@@ -17,10 +17,10 @@ https://www.youtube.com/watch?v=5FAq3uDZJW8
 * Throb - rate at which vibrato effect oscillates
 * Depth - amount of vibrato
 * Dry - amount of unaltered signal
-* Wet - amount of alteredf signal
+* Wet - amount of altered signal
 
 ## What is Univibe?
-Univibe is an exciting effect with loads of ways to use it. It's some of the most interesting modulation that's been super popularized by guitarists such as Jimi Hendrix. The original Univibe pedal was made to emulate a doppler effect of a radio transmission coming in and out. It pairs amazingly with some distortion before it for a classic 60s and 70s rock sound. It also works amazingly with clean tones for vibey soundscapes.
+Univibe is an exciting effect with loads of ways to use it. It's some of the most interesting modulation that's been super popularized by guitarists such as Jimi Hendrix. The original Univibe pedal was made to emulate a doppler effect of a radio transmission coming in and out. It pairs amazingly with some distortion before it for a classic 60s and 70s rock sound. It also works really well with clean tones for vibey soundscapes.
 
 ## Files Supported
 Currently **Party Panda** is only available as a **VST3** or **AU** plugin, which is supported by most types of DAWs. It also works as a standalone app without the need for a DAW. It has not been tested or compiled as an AAX file for Pro Tools, but it should build and work if you have the license and SDK.
