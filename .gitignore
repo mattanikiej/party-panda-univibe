@@ -1,7 +1,11 @@
 Builds/*
 
+Releases/*
+
 *.kra
 *.kra~
 *.mp4
+*.iss
+*.wav
 
 thumbnail.*
