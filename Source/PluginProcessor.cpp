@@ -243,6 +243,10 @@ void PartyPandaAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
 
             // oscillate phase
             float wP = 1.0f / _phaseRate;
+            // reset step to prevent overflow
+            if (wP * phaserStep >= twoPi) {
+                phaserStep = 0.0f;
+            }
             float newFrequency = std::sinf(wP * phaserStep);
             newFrequency = juce::jmap(newFrequency, -1.0f, 1.0f, _frequencyRange[0], _frequencyRange[1]);
             setFrequencyByChannel(newFrequency, channel);
@@ -257,6 +261,10 @@ void PartyPandaAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
 
             // oscillate throb
             float wT = 1.0f / _throbRate;
+            // reset step to prevent overflow
+            if (wT * throbStep >= twoPi) {
+                throbStep = 0.0f;
+            }
             float throb = std::sinf(wT * throbStep);
             throb = juce::jmap(throb, -1.0f, 1.0f, 1.0f - _depthMapped, 1.0f);
             throbStep += 1.0f;
